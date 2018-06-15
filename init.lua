@@ -105,7 +105,7 @@ function HC:neighbors(shape)
 	return neighbors
 end
 
-function HC:collisions(shape)
+function HC:collisionsAll(shape)
 	local candidates = self:neighbors(shape)
 	for other in pairs(candidates) do
 		local collides, dx, dy = shape:collidesWith(other)
@@ -116,6 +116,47 @@ function HC:collisions(shape)
 		end
 	end
 	return candidates
+end
+
+function HC:collisionsList(shape, list, callback) 
+	local candidates = self:neighbors(shape)
+	for other in pairs(candidates) do	
+		if list.alive[other] or (other.id and list.alive[other.id]) then
+			local collides, dx, dy = shape:collidesWith(other)
+			if collides then
+				callback(shape, other, {dx,dy, x=dx, y=dy})
+			end
+		end
+	end
+	return candidates
+end
+
+function HC:collisionsList2(list1, list2, callback) 
+	for shape,_ in pairs(list1.alive) do
+		local candidates = self:neighbors(shape)
+		for other in pairs(candidates) do	
+			if list2.alive[other] or (other.id and list2.alive[other.id]) then
+				local collides, dx, dy = shape:collidesWith(other)
+				if collides then
+					callback(shape, other, {dx,dy, x=dx, y=dy})
+				end
+			end
+		end
+	end
+end
+
+function HC:collisions(item1, item2, callback)
+	-- Standard function : one arg, return list of collisions
+	-- Group function	 : two arg, both lists
+	-- Single comp group : object first, then list
+
+	if item1 and not(item2) then
+		return self:collisionsAll(item1)
+	elseif not(item1.__name == 'List') and item2.__name == 'List' then
+		return self:collisionsList(item1, item2, callback)
+	elseif item1.__name == 'List' and item2.__name == 'List' then
+		return self:collisionsList2(item1, item2, callback)
+	end
 end
 
 -- the class and the instance
