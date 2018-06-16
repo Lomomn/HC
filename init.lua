@@ -105,7 +105,9 @@ function HC:neighbors(shape)
 	return neighbors
 end
 
-function HC:collisionsAll(shape)
+function HC:collideSingle(shape)
+	-- The default collision method
+	-- Returns a list of everything that collided with the shape
 	local candidates = self:neighbors(shape)
 	for other in pairs(candidates) do
 		local collides, dx, dy = shape:collidesWith(other)
@@ -118,44 +120,52 @@ function HC:collisionsAll(shape)
 	return candidates
 end
 
-function HC:collisionsList(shape, list, callback) 
+function HC:collideList(shape, list, callback)
+	-- Checks a single object against a set
 	local candidates = self:neighbors(shape)
-	for other in pairs(candidates) do	
-		if list.alive[other] or (other.id and list.alive[other.id]) then
+	
+	for other in pairs(candidates) do
+		if list[other.parent] then
 			local collides, dx, dy = shape:collidesWith(other)
 			if collides then
-				callback(shape, other, {dx,dy, x=dx, y=dy})
+				callback(shape.parent, other.parent, {dx,dy, x=dx, y=dy})
 			end
 		end
 	end
-	return candidates
 end
 
-function HC:collisionsList2(list1, list2, callback) 
-	for shape,_ in pairs(list1.alive) do
-		local candidates = self:neighbors(shape)
-		for other in pairs(candidates) do	
-			if list2.alive[other] or (other.id and list2.alive[other.id]) then
-				local collides, dx, dy = shape:collidesWith(other)
+function HC:collideTwoLists(list1, list2, callback, hitboxName)
+	-- Checks a single object against a set
+	for shape,_ in pairs(list1) do
+		local hitboxName = hitboxName or 'hitbox' -- default of 'hitbox' as a fallback before error
+		local candidates = self:neighbors(shape.bounds[hitboxName])
+		
+		for other in pairs(candidates) do
+			if list2[other.parent] then
+				local collides, dx, dy = shape.bounds[hitboxName]:collidesWith(other)
 				if collides then
-					callback(shape, other, {dx,dy, x=dx, y=dy})
+					callback(shape, other.parent, {dx,dy, x=dx, y=dy})
 				end
 			end
 		end
 	end
 end
 
-function HC:collisions(item1, item2, callback)
-	-- Standard function : one arg, return list of collisions
-	-- Group function	 : two arg, both lists
-	-- Single comp group : object first, then list
 
-	if item1 and not(item2) then
-		return self:collisionsAll(item1)
-	elseif not(item1.__name == 'List') and item2.__name == 'List' then
-		return self:collisionsList(item1, item2, callback)
-	elseif item1.__name == 'List' and item2.__name == 'List' then
-		return self:collisionsList2(item1, item2, callback)
+function HC:collisions(object1, object2, callback, hitboxName)
+	-- Check which objects were passed and then call the appropriate method
+	-- The lists should be element indexed, table[element] = true etc
+
+	if object1 and not(object2) then
+		return self:collideSingle(object1)
+	elseif object1.__name and not(object2.__name) then
+		-- object1 is an entity and object2 is a list. object1 should be a bound, object2 should be parent set
+		-- returns the object parent
+		self:collideList(object1, object2, callback)
+	else
+		-- assumes both objects are lists
+		-- a hitbox name is required as the first object is of parent entities
+		self:collideTwoLists(object1, object2, callback, hitboxName)
 	end
 end
 
