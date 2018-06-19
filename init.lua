@@ -155,17 +155,21 @@ end
 function HC:collisions(object1, object2, callback, hitboxName)
 	-- Check which objects were passed and then call the appropriate method
 	-- The lists should be element indexed, table[element] = true etc
-
+	
 	if object1 and not(object2) then
 		return self:collideSingle(object1)
 	elseif object1.__name and not(object2.__name) then
 		-- object1 is an entity and object2 is a list. object1 should be a bound, object2 should be parent set
 		-- returns the object parent
-		self:collideList(object1, object2, callback)
+		if next(object2) then
+			self:collideList(object1, object2, callback)
+		end
 	else
 		-- assumes both objects are lists
 		-- a hitbox name is required as the first object is of parent entities
-		self:collideTwoLists(object1, object2, callback, hitboxName)
+		if next(object1) and next(object2) then
+			self:collideTwoLists(object1, object2, callback, hitboxName)
+		end
 	end
 end
 
