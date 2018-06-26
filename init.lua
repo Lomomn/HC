@@ -120,8 +120,10 @@ function HC:collideSingle(shape)
 	return candidates
 end
 
-function HC:collideList(shape, list, callback)
+function HC:collideList(object, list, callback, hitboxName)
 	-- Checks a single object against a set
+	local hitboxName = hitboxName or 'hitbox'
+    local shape = object.bounds[hitboxName]
 	local candidates = self:neighbors(shape)
 	
 	for other in pairs(candidates) do
